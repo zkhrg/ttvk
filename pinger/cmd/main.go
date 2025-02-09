@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"os/exec"
@@ -16,7 +17,6 @@ import (
 )
 
 type IPData struct {
-	ID          string    `json:"id,omitempty"`
 	IPAddress   string    `json:"ip_address"`
 	PingTime    int       `json:"ping_time"`
 	LastSuccess time.Time `json:"last_success"`
@@ -81,28 +81,26 @@ func fetchIPData(url string) ([]IPData, error) {
 }
 
 func updateIPData(url string, ipData IPData) error {
-	client := &http.Client{}
 	data, err := json.Marshal(ipData)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal JSON: %v", err)
 	}
 
-	req, err := http.NewRequest("PATCH", url, bytes.NewBuffer(data))
+	// Используем стандартный клиент
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(data))
 	if err != nil {
-		return err
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return err
+		return fmt.Errorf("request failed: %v", err)
 	}
 	defer resp.Body.Close()
 
+	// Читаем тело ответа для отладки
+	respBody, _ := io.ReadAll(resp.Body)
+
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to update IP data: %s", resp.Status)
+		return fmt.Errorf("failed to update IP data: %s, response: %s", resp.Status, string(respBody))
 	}
 
+	fmt.Printf("Requesting update with body: %s\n", string(data))
 	return nil
 }
 

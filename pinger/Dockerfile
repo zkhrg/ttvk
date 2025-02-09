@@ -1,19 +1,31 @@
-#
-# MockServer Performance Dockerfile
-#
-# https://github.com/mock-server/mockserver
-# http://www.mock-server.com
-#
+# Используем официальный Go-образ на базе Alpine для сборки
+FROM ubuntu:latest AS builder
 
-# pull base image.
-FROM locustio/locust
+# Устанавливаем зависимости
+RUN apt-get update && apt-get install -y iputils-ping ca-certificates golang
 
-# maintainer details
-MAINTAINER James Bloom "jamesdbloom@gmail.com"
+# Указываем рабочую директорию
+WORKDIR /app
 
-# install basic build tools
-USER root
-RUN apt update
-RUN apt upgrade -y
-RUN apt install -y curl
-USER locust
+# Копируем go.mod и go.sum, устанавливаем зависимости
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Копируем весь код
+COPY . .
+
+# Собираем бинарник
+RUN CGO_ENABLED=0 go build  -o app ./cmd/main.go
+
+# Финальный контейнер с минимальным размером
+FROM ubuntu:latest
+
+# Устанавливаем утилиту ping
+# RUN apt-get install --no-cache iputils
+RUN apt-get update && apt-get install -y iputils-ping ca-certificates
+
+# Копируем бинарник из сборочного контейнера
+COPY --from=builder /app/app /app
+
+# Запускаем приложение
+CMD ["/app"]

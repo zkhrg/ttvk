@@ -11,8 +11,6 @@ services:
       PORT: 8080
     depends_on:
       - postgres
-    networks:
-      - my-net
 
   front:
     container_name: front
@@ -23,20 +21,18 @@ services:
       - "8081:8080"
     depends_on:
       - postgres
-    networks:
-      - my-net
 
   pinger:
     container_name: pinger
+    environment:
+      API_URL: http://back:8080/api/address/
     build:
-      context: .
-      dockerfile: ./pinger/Dockerfile
+      context: ./pinger
+      dockerfile: ./Dockerfile
     ports:
       - "8082:8080"
     depends_on:
-      - postgres
-    networks:
-      - my-net
+      - back
 
   postgres:
     image: postgres:latest
@@ -50,12 +46,6 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./back/migrations:/docker-entrypoint-initdb.d
-    networks:
-      - my-net
-
-networks:
-  my-net:
-    driver: bridge
 
 volumes:
   postgres_data:

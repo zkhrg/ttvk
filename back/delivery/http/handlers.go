@@ -11,12 +11,13 @@ import (
 
 func AddressHandler(uc *usecase.Usecase) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println("метод", r.Method)
 		switch r.Method {
 		case "GET":
 			GetAddresses(uc, w, r)
 		case "POST":
 			fmt.Println("POST METHOD")
-			CreateAddress(uc, w, r)
+			EditAddress(uc, w, r)
 		case "PATCH":
 			EditAddress(uc, w, r)
 		default:
@@ -38,13 +39,14 @@ func GetAddresses(uc *usecase.Usecase, w http.ResponseWriter, r *http.Request) {
 
 func EditAddress(uc *usecase.Usecase, w http.ResponseWriter, r *http.Request) {
 	var newAddressInfo entities.EntityRequest
+	fmt.Println("прилетел едит реквест")
 	if err := json.NewDecoder(r.Body).Decode(&newAddressInfo); err != nil {
 		http.Error(w, "Invalid JSON body: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	defer r.Body.Close()
-
+	// fmt.Println(r.Body)
 	answer, err := uc.EditAddressByIP(newAddressInfo)
 
 	if err != nil {
