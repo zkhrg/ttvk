@@ -1,0 +1,61 @@
+services:
+  back:
+    container_name: back
+    build:
+      context: ./back
+      dockerfile: ./Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      DB_URL: postgresql://ttvk:ttvk@postgres/ttvk?sslmode=disable
+      PORT: 8080
+    depends_on:
+      - postgres
+    networks:
+      - my-net
+
+  front:
+    container_name: front
+    build:
+      context: .
+      dockerfile: ./front/Dockerfile
+    ports:
+      - "8081:8080"
+    depends_on:
+      - postgres
+    networks:
+      - my-net
+
+  pinger:
+    container_name: pinger
+    build:
+      context: .
+      dockerfile: ./pinger/Dockerfile
+    ports:
+      - "8082:8080"
+    depends_on:
+      - postgres
+    networks:
+      - my-net
+
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ttvk
+      POSTGRES_PASSWORD: ttvk
+      POSTGRES_DB: ttvk
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./back/migrations:/docker-entrypoint-initdb.d
+    networks:
+      - my-net
+
+networks:
+  my-net:
+    driver: bridge
+
+volumes:
+  postgres_data:
